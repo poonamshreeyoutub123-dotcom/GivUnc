@@ -1,33 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, X, Trophy, LayoutDashboard, Target, MessageSquare, Shield, LogOut, Zap } from 'lucide-react';
+import { Menu, X, Trophy, LayoutDashboard, Target, MessageSquare, Shield, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 export function Navbar() {
-  const { user, profile, signOut, loading } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
     { href: '/', label: 'Home', icon: Zap },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/tasks', label: 'Tasks', icon: Target },
+    { href: '/support', label: 'Support', icon: MessageSquare },
   ];
-
-  if (user) {
-    navLinks.push(
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/tasks', label: 'Tasks', icon: Target },
-      { href: '/support', label: 'Support', icon: MessageSquare },
-    );
-    if (profile?.is_admin) {
-      navLinks.push({ href: '/admin', label: 'Admin', icon: Shield });
-    }
-  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -65,40 +54,8 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Right side */}
-        <div className="hidden items-center gap-3 md:flex">
-          {loading ? (
-            <div className="h-8 w-20 animate-pulse rounded-lg bg-secondary" />
-          ) : user ? (
-            <>
-              {profile && (
-                <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-1.5">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  <span className="font-orbitron text-sm font-bold text-primary">{profile.pts}</span>
-                  <span className="text-xs text-muted-foreground">PTS</span>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="mr-1 h-4 w-4" />
-                Sign Out
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Log In</Button>
-              </Link>
-              <Link href="/signup">
-                <Button size="sm" className="gradient-primary text-background font-semibold hover:opacity-90">Sign Up</Button>
-              </Link>
-            </>
-          )}
-        </div>
+        {/* Right side - Empty for now */}
+        <div className="hidden items-center gap-3 md:flex" />
 
         {/* Mobile toggle */}
         <button
@@ -133,22 +90,6 @@ export function Navbar() {
                 </Link>
               );
             })}
-            {!user && (
-              <div className="mt-2 flex gap-2">
-                <Link href="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" className="w-full">Log In</Button>
-                </Link>
-                <Link href="/signup" className="flex-1" onClick={() => setMobileOpen(false)}>
-                  <Button className="w-full gradient-primary text-background">Sign Up</Button>
-                </Link>
-              </div>
-            )}
-            {user && (
-              <Button variant="ghost" onClick={signOut} className="mt-2 justify-start">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            )}
           </nav>
         </div>
       )}

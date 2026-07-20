@@ -1,41 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { LeaderboardEntry } from '@/lib/types';
-import { Trophy, Zap, Target, Shield, ArrowRight, Youtube, TrendingUp, Users, Sparkles } from 'lucide-react';
+import { Trophy, Zap, Target, ArrowRight, Youtube, TrendingUp, Users, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 export default function HomePage() {
-  const [topPlayers, setTopPlayers] = useState<LeaderboardEntry[]>([]);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [totalPts, setTotalPts] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const { data: lb } = await supabase
-        .from('leaderboard_view')
-        .select('*')
-        .limit(5);
-      setTopPlayers((lb as LeaderboardEntry[]) || []);
-
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      setTotalUsers(count || 0);
-
-      const { data: ptsData } = await supabase
-        .from('profiles')
-        .select('pts');
-      const sum = (ptsData || []).reduce((acc, p: any) => acc + (p.pts || 0), 0);
-      setTotalPts(sum);
-      setLoading(false);
-    })();
-  }, []);
+  // Static demo data
+  const topPlayers = [
+    { id: '1', display_name: 'Player1', rank: 'Pro', pts: 1500, position: 1 },
+    { id: '2', display_name: 'Player2', rank: 'Elite', pts: 1200, position: 2 },
+    { id: '3', display_name: 'Player3', rank: 'Master', pts: 950, position: 3 },
+  ];
+  const totalUsers = 156;
+  const totalPts = 45230;
 
   return (
     <div className="relative">
@@ -62,16 +41,16 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <Link href="/signup">
+              <Link href="/leaderboard">
                 <Button size="lg" className="gradient-primary text-background font-semibold glow-primary hover:opacity-90">
                   <Zap className="mr-2 h-5 w-5" />
-                  Start Earning PTS
+                  View Leaderboard
                 </Button>
               </Link>
-              <Link href="/leaderboard">
+              <Link href="/tasks">
                 <Button size="lg" variant="outline" className="border-primary/30 hover:border-primary/50">
-                  <Trophy className="mr-2 h-5 w-5" />
-                  View Leaderboard
+                  <Target className="mr-2 h-5 w-5" />
+                  View Tasks
                 </Button>
               </Link>
             </div>
@@ -81,16 +60,12 @@ export default function HomePage() {
           <div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <Card className="card-glow p-6 text-center">
               <Users className="mx-auto mb-2 h-6 w-6 text-primary" />
-              <div className="font-orbitron text-3xl font-bold">
-                {loading ? '—' : totalUsers.toLocaleString()}
-              </div>
+              <div className="font-orbitron text-3xl font-bold">{totalUsers.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">Active Members</div>
             </Card>
             <Card className="card-glow p-6 text-center">
               <TrendingUp className="mx-auto mb-2 h-6 w-6 text-primary" />
-              <div className="font-orbitron text-3xl font-bold text-primary">
-                {loading ? '—' : totalPts.toLocaleString()}
-              </div>
+              <div className="font-orbitron text-3xl font-bold text-primary">{totalPts.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">Total PTS Earned</div>
             </Card>
             <Card className="card-glow p-6 text-center">
@@ -153,23 +128,9 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-3">
-          {loading ? (
-            [1, 2, 3].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-xl bg-secondary" />
-            ))
-          ) : topPlayers.length === 0 ? (
-            <Card className="card-glow p-12 text-center">
-              <Trophy className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-              <p className="text-muted-foreground">No players yet. Be the first to earn PTS!</p>
-              <Link href="/signup" className="mt-4 inline-block">
-                <Button className="gradient-primary text-background">Get Started</Button>
-              </Link>
-            </Card>
-          ) : (
-            topPlayers.map((player) => (
-              <LeaderboardRow key={player.id} player={player} />
-            ))
-          )}
+          {topPlayers.map((player) => (
+            <LeaderboardRow key={player.id} player={player} />
+          ))}
         </div>
       </section>
 
@@ -183,9 +144,9 @@ export default function HomePage() {
             <p className="mb-6 text-muted-foreground">
               Join the GiveUnc community and compete for the top spot.
             </p>
-            <Link href="/signup">
+            <Link href="/leaderboard">
               <Button size="lg" className="gradient-primary text-background font-semibold glow-primary">
-                Create Free Account
+                Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -196,7 +157,7 @@ export default function HomePage() {
   );
 }
 
-function LeaderboardRow({ player }: { player: LeaderboardEntry }) {
+function LeaderboardRow({ player }: { player: any }) {
   const isTop3 = player.position <= 3;
   const medals = ['🥇', '🥈', '🥉'];
 
