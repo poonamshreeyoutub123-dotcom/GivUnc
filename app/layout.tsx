@@ -1,7 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Orbitron } from 'next/font/google';
-import { AuthProvider } from '@/lib/auth-context';
 import { Navbar } from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -26,13 +25,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${orbitron.variable} font-sans`}>
-        <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1">{children}</main>
-          </div>
-          <Toaster />
-        </AuthProvider>
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1">{children}</main>
+        </div>
+        <Toaster />
       </body>
     </html>
   );
