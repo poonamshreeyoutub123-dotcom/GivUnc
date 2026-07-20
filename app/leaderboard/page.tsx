@@ -1,47 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { LeaderboardEntry, RANK_TIERS, getRankInfo } from '@/lib/types';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Trophy, Crown, Medal, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/auth-context';
+
+const RANK_TIERS = [
+  { name: 'Rookie', min: 0, color: 'text-gray-400' },
+  { name: 'Pro', min: 100, color: 'text-blue-400' },
+  { name: 'Elite', min: 500, color: 'text-purple-400' },
+  { name: 'Master', min: 1000, color: 'text-yellow-400' },
+  { name: 'Legend', min: 2000, color: 'text-red-400' },
+];
+
+const DEMO_PLAYERS = [
+  { id: '1', display_name: 'Player1', rank: 'Master', pts: 1500, position: 1 },
+  { id: '2', display_name: 'Player2', rank: 'Elite', pts: 1200, position: 2 },
+  { id: '3', display_name: 'Player3', rank: 'Pro', pts: 950, position: 3 },
+  { id: '4', display_name: 'Player4', rank: 'Pro', pts: 750, position: 4 },
+  { id: '5', display_name: 'Player5', rank: 'Pro', pts: 600, position: 5 },
+];
+
+function getRankInfo(rank: string) {
+  return RANK_TIERS.find(t => t.name === rank) || RANK_TIERS[0];
+}
 
 export default function LeaderboardPage() {
-  const { user } = useAuth();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from('leaderboard_view')
-        .select('*')
-        .order('pts', { ascending: false });
-      setEntries((data as LeaderboardEntry[]) || []);
-      setLoading(false);
-    })();
-
-    const channel = supabase
-      .channel('leaderboard-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => {
-        const { data } = await supabase
-          .from('leaderboard_view')
-          .select('*')
-          .order('pts', { ascending: false });
-        setEntries((data as LeaderboardEntry[]) || []);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const filtered = entries.filter((e) =>
+  const filtered = DEMO_PLAYERS.filter((e) =>
     e.display_name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -69,23 +57,16 @@ export default function LeaderboardPage() {
         />
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-xl bg-secondary" />
-          ))}
-        </div>
-      ) : entries.length === 0 ? (
+      {filtered.length === 0 ? (
         <Card className="card-glow p-12 text-center">
           <Trophy className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="text-muted-foreground">No players yet. Be the first!</p>
+          <p className="text-muted-foreground">No players found</p>
         </Card>
       ) : (
         <>
           {/* Top 3 podium */}
           {top3.length > 0 && (
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {/* Reorder for podium: 2nd, 1st, 3rd */}
               {[1, 0, 2].map((idx) => {
                 const player = top3[idx];
                 if (!player) return <div key={idx} />;
@@ -134,22 +115,13 @@ export default function LeaderboardPage() {
           {rest.length > 0 && (
             <div className="space-y-2">
               {rest.map((player) => (
-                <Card
-                  key={player.id}
-                  className={cn(
-                    'card-glow flex items-center gap-4 p-4',
-                    player.id === user?.id && 'border-primary/30 glow-border'
-                  )}
-                >
+                <Card key={player.id} className="card-glow flex items-center gap-4 p-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary font-orbitron text-sm font-bold text-muted-foreground">
                     {player.position}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{player.display_name}</span>
-                      {player.id === user?.id && (
-                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">You</span>
-                      )}
                       <span className={cn('text-xs', getRankInfo(player.rank).color)}>{player.rank}</span>
                     </div>
                   </div>

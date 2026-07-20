@@ -1,61 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase/client';
-import { LeaderboardEntry, Task, TaskCompletion, getRankInfo, getNextRank, RANK_TIERS } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Target, Zap, TrendingUp, Youtube, ArrowRight, CheckCircle2, Clock, XCircle, Star } from 'lucide-react';
+import { Trophy, Target, Zap, TrendingUp, Star, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const RANK_TIERS = [
+  { name: 'Rookie', min: 0, color: 'text-gray-400' },
+  { name: 'Pro', min: 100, color: 'text-blue-400' },
+  { name: 'Elite', min: 500, color: 'text-purple-400' },
+  { name: 'Master', min: 1000, color: 'text-yellow-400' },
+  { name: 'Legend', min: 2000, color: 'text-red-400' },
+];
+
+function getRankInfo(rank: string) {
+  return RANK_TIERS.find(t => t.name === rank) || RANK_TIERS[0];
+}
+
+function getNextRank(pts: number) {
+  return RANK_TIERS.find(t => t.min > pts);
+}
+
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user, profile, loading, refreshProfile } = useAuth();
-  const [completions, setCompletions] = useState<TaskCompletion[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [position, setPosition] = useState<number | null>(null);
-  const [totalUsers, setTotalUsers] = useState(0);
-
-  useEffect(() => {
-    if (!loading && !user) router.push('/login');
-  }, [loading, user, router]);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const [{ data: taskData }, { data: completionData }] = await Promise.all([
-        supabase.from('tasks').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('task_completions').select('*').eq('user_id', user.id),
-      ]);
-      setTasks(taskData as Task[] || []);
-      setCompletions(completionData as TaskCompletion[] || []);
-
-      const { data: lb } = await supabase.from('leaderboard_view').select('*');
-      const entry = (lb as LeaderboardEntry[])?.find((e) => e.id === user.id);
-      if (entry) setPosition(entry.position);
-      setTotalUsers((lb as LeaderboardEntry[])?.length || 0);
-    })();
-  }, [user]);
-
-  if (loading || !profile) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
+  const profile = { display_name: 'Demo User', pts: 250, rank: 'Pro' };
+  const totalUsers = 156;
+  const verifiedCount = 3;
+  const pendingCount = 1;
 
   const rankInfo = getRankInfo(profile.rank);
   const nextRank = getNextRank(profile.pts);
   const progressToNext = nextRank
     ? Math.min(100, ((profile.pts - (RANK_TIERS.find((t) => t.name === profile.rank)?.min || 0)) / (nextRank.min - (RANK_TIERS.find((t) => t.name === profile.rank)?.min || 0))) * 100)
     : 100;
-
-  const verifiedCount = completions.filter((c) => c.status === 'verified').length;
-  const pendingCount = completions.filter((c) => c.status === 'pending').length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -82,7 +59,7 @@ export default function DashboardPage() {
             <div>
               <div className="text-sm text-muted-foreground">Leaderboard Rank</div>
               <div className="font-orbitron text-3xl font-bold">
-                #{position || '—'}
+                #5
                 <span className="text-sm font-normal text-muted-foreground"> / {totalUsers}</span>
               </div>
             </div>
@@ -99,7 +76,7 @@ export default function DashboardPage() {
               <div className="font-orbitron text-3xl font-bold">{verifiedCount}</div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle2 className="h-6 w-6 text-primary" />
+              <Trophy className="h-6 w-6 text-primary" />
             </div>
           </div>
         </Card>
@@ -111,7 +88,7 @@ export default function DashboardPage() {
               <div className="font-orbitron text-3xl font-bold">{pendingCount}</div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <Clock className="h-6 w-6 text-primary" />
+              <TrendingUp className="h-6 w-6 text-primary" />
             </div>
           </div>
         </Card>
@@ -144,36 +121,6 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      {/* YouTube connection status */}
-      <Card className="card-glow mt-6 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-lg',
-              profile.youtube_connected ? 'bg-red-500/10 text-red-500' : 'bg-secondary text-muted-foreground'
-            )}>
-              <Youtube className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold">YouTube Connection</div>
-              <div className="text-sm text-muted-foreground">
-                {profile.youtube_connected
-                  ? `Connected${profile.youtube_channel_id ? ` · ${profile.youtube_channel_id}` : ''}`
-                  : 'Not connected — required for subscribe/like task verification'}
-              </div>
-            </div>
-          </div>
-          {!profile.youtube_connected && (
-            <Link href="/tasks">
-              <Button variant="outline" className="border-primary/30 hover:border-primary/50">
-                Connect
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          )}
-        </div>
-      </Card>
-
       {/* Recent task activity */}
       <div className="mt-8">
         <div className="mb-4 flex items-center justify-between">
@@ -186,60 +133,14 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {completions.length === 0 ? (
-          <Card className="card-glow p-12 text-center">
-            <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="mb-4 text-muted-foreground">You haven't claimed any tasks yet.</p>
-            <Link href="/tasks">
-              <Button className="gradient-primary text-background">Start Earning PTS</Button>
-            </Link>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {completions.slice(0, 5).map((completion) => {
-              const task = tasks.find((t) => t.id === completion.task_id);
-              if (!task) return null;
-              return (
-                <Card key={completion.id} className="card-glow flex items-center gap-4 p-4">
-                  <StatusIcon status={completion.status} />
-                  <div className="flex-1">
-                    <div className="font-medium">{task.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Claimed {new Date(completion.claimed_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-orbitron font-bold text-primary">+{task.pts_value}</div>
-                    <div className="text-xs text-muted-foreground">PTS</div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        <Card className="card-glow p-12 text-center">
+          <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+          <p className="mb-4 text-muted-foreground">📢 Demo Mode - To see real task activity, set up Supabase backend</p>
+          <Link href="/tasks">
+            <Button className="gradient-primary text-background">View Available Tasks</Button>
+          </Link>
+        </Card>
       </div>
     </div>
   );
-}
-
-function StatusIcon({ status }: { status: string }) {
-  if (status === 'verified')
-    return (
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-        <CheckCircle2 className="h-5 w-5 text-primary" />
-      </div>
-    );
-  if (status === 'pending')
-    return (
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/10">
-        <Clock className="h-5 w-5 text-yellow-500" />
-      </div>
-    );
-  if (status === 'rejected' || status === 'revoked')
-    return (
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
-        <XCircle className="h-5 w-5 text-destructive" />
-      </div>
-    );
-  return null;
 }
